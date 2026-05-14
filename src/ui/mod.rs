@@ -1,3 +1,5 @@
+pub mod detail;
+pub mod dialog;
 pub mod grid;
 pub mod panel;
 pub mod status_bar;
@@ -7,7 +9,7 @@ use ratatui::style::{Color, Style};
 use ratatui::widgets::Paragraph;
 use ratatui::Frame;
 
-use crate::app::App;
+use crate::app::{App, AppMode};
 use crate::config::PanelType;
 
 pub fn render(frame: &mut Frame, app: &App) {
@@ -19,19 +21,19 @@ pub fn render(frame: &mut Frame, app: &App) {
         Ok(resolved_panels) => {
             for (i, resolved) in resolved_panels.iter().enumerate() {
                 let is_active = i == app.active_panel;
-                let scroll = app.scroll_offsets.get(&resolved.id).copied().unwrap_or(0);
+                let selected = app.get_panel_selected(&resolved.id);
                 match resolved.panel_type {
                     PanelType::Task => {
-                        panel::task::render(frame, resolved.rect, &app.items.tasks, is_active, scroll)
+                        panel::task::render(frame, resolved.rect, &app.items.tasks, is_active, selected)
                     }
                     PanelType::Jira => {
-                        panel::jira::render(frame, resolved.rect, &app.items.jira, is_active, scroll)
+                        panel::jira::render(frame, resolved.rect, &app.items.jira, is_active, selected)
                     }
                     PanelType::GithubPr => {
-                        panel::github_pr::render(frame, resolved.rect, &app.items.github_prs, is_active, scroll)
+                        panel::github_pr::render(frame, resolved.rect, &app.items.github_prs, is_active, selected)
                     }
                     PanelType::GithubIssue => {
-                        panel::github_issue::render(frame, resolved.rect, &app.items.github_issues, is_active, scroll)
+                        panel::github_issue::render(frame, resolved.rect, &app.items.github_issues, is_active, selected)
                     }
                     PanelType::Timer => {
                         let timer = app.timers.get(&resolved.id);
@@ -48,4 +50,11 @@ pub fn render(frame: &mut Frame, app: &App) {
     }
 
     status_bar::render(frame, status_area, app);
+
+    match app.mode {
+        AppMode::List => {}
+        AppMode::Detail => detail::render(frame, app),
+        AppMode::Edit => dialog::render_edit(frame, app),
+        AppMode::DeleteConfirm => dialog::render_delete_confirm(frame, app),
+    }
 }

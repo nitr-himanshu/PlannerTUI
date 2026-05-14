@@ -8,7 +8,7 @@ use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
 use std::io;
 
-use crate::config::Config;
+use crate::config::{self, Config};
 use crate::storage::Items;
 use state::{SetupState, SetupStep};
 
@@ -64,6 +64,6 @@ pub fn run(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<Setu
 
     Ok(SetupResult {
         config: config_gen::generate(&state),
-        items: Items::default(),
+        items: config::defaults::default_items(),
     })
 }

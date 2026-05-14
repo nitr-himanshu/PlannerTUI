@@ -12,6 +12,8 @@ pub enum Priority {
 pub struct Task {
     pub id: String,
     pub title: String,
+    #[serde(default)]
+    pub description: String,
     pub deadline: String,
     pub priority: Priority,
     pub color: String,

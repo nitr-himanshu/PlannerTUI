@@ -456,12 +456,14 @@ fn centered_rect(percent_x: u16, percent_y: u16, area: Rect) -> Rect {
         .split(vert[1])[1]
 }
 
-fn trunc(s: &str, max: usize) -> String {
-    if s.len() <= max {
-        format!("{:^max$}", s)
-    } else {
-        format!("{:.max$}", s)
-    }
+fn c1(s: &str) -> String {
+    let s = if s.len() > 6 { &s[..6] } else { s };
+    format!("{:^6}", s)
+}
+
+fn c2(s: &str) -> String {
+    let s = if s.len() > 17 { &s[..17] } else { s };
+    format!("{:^17}", s)
 }
 
 fn layout_art(state: &SetupState, count: usize, option: usize) -> (String, Vec<String>) {
@@ -472,65 +474,97 @@ fn layout_art(state: &SetupState, count: usize, option: usize) -> (String, Vec<S
         .map(|f| f.short)
         .collect();
 
-    let n = |i: usize| trunc(names.get(i).copied().unwrap_or("?"), 8);
+    let g = |i: usize| names.get(i).copied().unwrap_or("?");
 
     match (count, option) {
         (1, _) => (
             "1 column × 1 row".to_string(),
             vec![
-                format!("┌──────────────┐"),
-                format!("│              │"),
-                format!("│  {}  │", n(0)),
-                format!("│              │"),
-                format!("└──────────────┘"),
+                "┌──────────┐".into(),
+                "│          │".into(),
+                format!("│  {}  │", c1(g(0))),
+                "│          │".into(),
+                "└──────────┘".into(),
             ],
         ),
         (2, _) => (
             "2 columns × 1 row".to_string(),
             vec![
-                format!("┌──────────┬──────────┐"),
-                format!("│          │          │"),
-                format!("│  {}  │  {}  │", n(0), n(1)),
-                format!("│          │          │"),
-                format!("└──────────┴──────────┘"),
+                "┌──────────┬──────────┐".into(),
+                "│          │          │".into(),
+                format!("│  {}  │  {}  │", c1(g(0)), c1(g(1))),
+                "│          │          │".into(),
+                "└──────────┴──────────┘".into(),
+            ],
+        ),
+        (3, 0) => (
+            "3 columns × 1 row".to_string(),
+            vec![
+                "┌──────────┬──────────┬──────────┐".into(),
+                "│          │          │          │".into(),
+                format!("│  {}  │  {}  │  {}  │", c1(g(0)), c1(g(1)), c1(g(2))),
+                "│          │          │          │".into(),
+                "└──────────┴──────────┴──────────┘".into(),
             ],
         ),
         (3, _) => (
-            "3 columns × 1 row".to_string(),
+            "2 columns — left panel spans both rows".to_string(),
             vec![
-                format!("┌──────────┬──────────┬──────────┐"),
-                format!("│          │          │          │"),
-                format!("│  {}  │  {}  │  {}  │", n(0), n(1), n(2)),
-                format!("│          │          │          │"),
-                format!("└──────────┴──────────┴──────────┘"),
+                "┌──────────┬──────────┐".into(),
+                "│          │          │".into(),
+                format!("│          │  {}  │", c1(g(1))),
+                format!("│  {}  ├──────────┤", c1(g(0))),
+                format!("│          │  {}  │", c1(g(2))),
+                "│          │          │".into(),
+                "└──────────┴──────────┘".into(),
             ],
         ),
         (4, 0) => (
             "2 columns × 2 rows".to_string(),
             vec![
-                format!("┌──────────┬──────────┐"),
-                format!("│          │          │"),
-                format!("│  {}  │  {}  │", n(0), n(1)),
-                format!("│          │          │"),
-                format!("├──────────┼──────────┤"),
-                format!("│          │          │"),
-                format!("│  {}  │  {}  │", n(2), n(3)),
-                format!("│          │          │"),
-                format!("└──────────┴──────────┘"),
+                "┌──────────┬──────────┐".into(),
+                "│          │          │".into(),
+                format!("│  {}  │  {}  │", c1(g(0)), c1(g(1))),
+                "├──────────┼──────────┤".into(),
+                format!("│  {}  │  {}  │", c1(g(2)), c1(g(3))),
+                "│          │          │".into(),
+                "└──────────┴──────────┘".into(),
             ],
         ),
         (4, _) => (
-            "3 columns × 2 rows  (featured first panel)".to_string(),
+            "3 columns × 2 rows — wide top-left".to_string(),
             vec![
-                format!("┌────────────────────┬──────────┐"),
-                format!("│                    │          │"),
-                format!("│    {}    │  {}  │", trunc(names.first().copied().unwrap_or("?"), 14), n(1)),
-                format!("│                    │          │"),
-                format!("├──────────┬─────────┴──────────┤"),
-                format!("│          │                    │"),
-                format!("│  {}  │    {}    │", n(2), trunc(names.get(3).copied().unwrap_or("?"), 14)),
-                format!("│          │                    │"),
-                format!("└──────────┴────────────────────┘"),
+                "┌─────────────────────┬──────────┐".into(),
+                "│                     │          │".into(),
+                format!("│  {}  │  {}  │", c2(g(0)), c1(g(1))),
+                "├──────────┬──────────┴──────────┤".into(),
+                format!("│  {}  │  {}  │", c1(g(2)), c2(g(3))),
+                "│          │                     │".into(),
+                "└──────────┴─────────────────────┘".into(),
+            ],
+        ),
+        (5, 0) => (
+            "3 columns × 2 rows".to_string(),
+            vec![
+                "┌──────────┬──────────┬──────────┐".into(),
+                "│          │          │          │".into(),
+                format!("│  {}  │  {}  │  {}  │", c1(g(0)), c1(g(1)), c1(g(2))),
+                "├──────────┼──────────┴──────────┤".into(),
+                format!("│  {}  │  {}  │", c1(g(3)), c2(g(4))),
+                "│          │                     │".into(),
+                "└──────────┴─────────────────────┘".into(),
+            ],
+        ),
+        (5, _) => (
+            "3 columns × 2 rows — wide top-left".to_string(),
+            vec![
+                "┌─────────────────────┬──────────┐".into(),
+                "│                     │          │".into(),
+                format!("│  {}  │  {}  │", c2(g(0)), c1(g(1))),
+                "├──────────┬──────────┼──────────┤".into(),
+                format!("│  {}  │  {}  │  {}  │", c1(g(2)), c1(g(3)), c1(g(4))),
+                "│          │          │          │".into(),
+                "└──────────┴──────────┴──────────┘".into(),
             ],
         ),
         _ => ("unknown".to_string(), vec![]),

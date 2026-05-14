@@ -49,8 +49,9 @@ async fn run_app(
     terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
     config: Config,
     items: storage::Items,
+    items_path: PathBuf,
 ) -> Result<()> {
-    let mut app = App::new(config, items);
+    let mut app = App::new(config, items, items_path);
 
     let (tx, mut rx) = mpsc::channel::<AppEvent>(32);
 
@@ -128,7 +129,7 @@ async fn run_all(
         let result = setup::run(terminal)?;
 
         result.config.save(&config_path)?;
-        JsonProvider { path: items_path }.save(&result.items)?;
+        JsonProvider { path: items_path.clone() }.save(&result.items)?;
 
         (result.config, result.items)
     } else {
@@ -141,9 +142,9 @@ async fn run_all(
         }
         (
             Config::load(&config_path)?,
-            JsonProvider { path: items_path }.load()?,
+            JsonProvider { path: items_path.clone() }.load()?,
         )
     };
 
-    run_app(terminal, config, items).await
+    run_app(terminal, config, items, items_path).await
 }

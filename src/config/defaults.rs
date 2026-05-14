@@ -51,6 +51,7 @@ pub fn default_items() -> Items {
             Task {
                 id: "task-1".to_string(),
                 title: "Set up project structure".to_string(),
+                description: String::new(),
                 deadline: "2026-05-20T18:00:00".to_string(),
                 priority: Priority::High,
                 color: "#FF6B6B".to_string(),
@@ -58,6 +59,7 @@ pub fn default_items() -> Items {
             Task {
                 id: "task-2".to_string(),
                 title: "Implement grid layout".to_string(),
+                description: String::new(),
                 deadline: "2026-05-25T18:00:00".to_string(),
                 priority: Priority::Medium,
                 color: "#4ECDC4".to_string(),
@@ -73,10 +75,12 @@ pub fn default_items() -> Items {
         github_prs: vec![GithubPr {
             id: "org/repo#42".to_string(),
             link: "https://github.com/org/repo/pull/42".to_string(),
+            description: String::new(),
         }],
         github_issues: vec![GithubIssue {
             id: "org/repo#13".to_string(),
             link: "https://github.com/org/repo/issues/13".to_string(),
+            description: String::new(),
         }],
     }
 }

@@ -6,7 +6,7 @@ use ratatui::Frame;
 
 use crate::model::jira::JiraItem;
 
-pub fn render(frame: &mut Frame, rect: Rect, items: &[JiraItem], is_active: bool, scroll: usize) {
+pub fn render(frame: &mut Frame, rect: Rect, items: &[JiraItem], is_active: bool, selected: Option<usize>) {
     let (border_style, title_style) = if is_active {
         (
             Style::default().fg(Color::Cyan),
@@ -36,8 +36,12 @@ pub fn render(frame: &mut Frame, rect: Rect, items: &[JiraItem], is_active: bool
         })
         .collect();
 
-    let list = List::new(list_items).block(block);
+    let list = List::new(list_items)
+        .block(block)
+        .highlight_style(
+            Style::default().bg(Color::Rgb(40, 60, 80)).add_modifier(Modifier::BOLD),
+        );
     let mut state = ListState::default();
-    *state.offset_mut() = scroll.min(items.len().saturating_sub(1));
+    state.select(selected);
     frame.render_stateful_widget(list, rect, &mut state);
 }

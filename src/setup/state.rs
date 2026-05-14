@@ -33,6 +33,13 @@ impl SetupState {
             step: SetupStep::Welcome,
             features: vec![
                 FeatureOption {
+                    label: "Tasks",
+                    short: "Tasks",
+                    description: "Personal tasks with title, due date, priority and color",
+                    panel_type: PanelType::Task,
+                    selected: false,
+                },
+                FeatureOption {
                     label: "GitHub PRs",
                     short: "GH PRs",
                     description: "Track open pull requests assigned to you",
@@ -72,7 +79,10 @@ impl SetupState {
     }
 
     pub fn layout_options_count(&self) -> usize {
-        if self.selected_count() == 4 { 2 } else { 1 }
+        match self.selected_count() {
+            0..=2 => 1,
+            _ => 2,
+        }
     }
 
     pub fn next_feature(&mut self) {
