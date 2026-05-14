@@ -32,7 +32,10 @@ pub fn render(frame: &mut Frame, app: &App) {
                     PanelType::GithubIssue => {
                         panel::github_issue::render(frame, resolved.rect, &app.items.github_issues, is_active)
                     }
-                    PanelType::Timer => panel::timer::render(frame, resolved.rect, is_active),
+                    PanelType::Timer => {
+                        let timer = app.timers.get(&resolved.id);
+                        panel::timer::render(frame, resolved.rect, timer, is_active)
+                    }
                 }
             }
         }

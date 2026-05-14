@@ -1,13 +1,12 @@
 use anyhow::{bail, Result};
 use ratatui::layout::Rect;
 
-use crate::config::{Config, Panel, PanelType, TimerWidget};
+use crate::config::{Config, Panel, PanelType};
 
 pub struct ResolvedPanel {
     pub id: String,
     pub panel_type: PanelType,
     pub rect: Rect,
-    pub widget: Option<TimerWidget>,
 }
 
 pub fn resolve(config: &Config, area: Rect) -> Result<Vec<ResolvedPanel>> {
@@ -38,7 +37,6 @@ pub fn resolve(config: &Config, area: Rect) -> Result<Vec<ResolvedPanel>> {
                 id: p.id.clone(),
                 panel_type: p.panel_type.clone(),
                 rect: Rect::new(x, y, w, h),
-                widget: p.widget.clone(),
             }
         })
         .collect();
