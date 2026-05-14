@@ -41,5 +41,42 @@ pub fn default_config() -> Config {
 }
 
 pub fn default_items() -> Items {
-    Items::default()
+    use crate::model::{
+        github::{GithubIssue, GithubPr},
+        jira::JiraItem,
+        task::{Priority, Task},
+    };
+    Items {
+        tasks: vec![
+            Task {
+                id: "task-1".to_string(),
+                title: "Set up project structure".to_string(),
+                deadline: "2026-05-20T18:00:00".to_string(),
+                priority: Priority::High,
+                color: "#FF6B6B".to_string(),
+            },
+            Task {
+                id: "task-2".to_string(),
+                title: "Implement grid layout".to_string(),
+                deadline: "2026-05-25T18:00:00".to_string(),
+                priority: Priority::Medium,
+                color: "#4ECDC4".to_string(),
+            },
+        ],
+        jira: vec![JiraItem {
+            id: "PROJ-1".to_string(),
+            title: "API rate limiting".to_string(),
+            link: "https://your-org.atlassian.net/browse/PROJ-1".to_string(),
+            description: "Implement rate limiting on public endpoints".to_string(),
+            comment: "Token bucket algorithm proposed".to_string(),
+        }],
+        github_prs: vec![GithubPr {
+            id: "org/repo#42".to_string(),
+            link: "https://github.com/org/repo/pull/42".to_string(),
+        }],
+        github_issues: vec![GithubIssue {
+            id: "org/repo#13".to_string(),
+            link: "https://github.com/org/repo/issues/13".to_string(),
+        }],
+    }
 }

@@ -1,15 +1,24 @@
+mod app;
 mod config;
 mod model;
 mod storage;
 mod ui;
 
-use anyhow::Result;
-use std::path::PathBuf;
+use std::io;
+use std::time::Duration;
 
+use anyhow::Result;
+use crossterm::event::{self, Event, KeyCode, KeyEventKind};
+use crossterm::execute;
+use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
+use ratatui::backend::CrosstermBackend;
+use ratatui::Terminal;
+
+use app::App;
 use config::Config;
 use storage::{json::JsonProvider, DataProvider};
 
-fn data_dir() -> Result<PathBuf> {
+fn data_dir() -> Result<std::path::PathBuf> {
     let exe = std::env::current_exe()?;
     let dir = exe
         .parent()
@@ -17,7 +26,7 @@ fn data_dir() -> Result<PathBuf> {
     Ok(dir.join(".planner_tui"))
 }
 
-fn ensure_data_dir() -> Result<(PathBuf, PathBuf)> {
+fn ensure_data_dir() -> Result<(std::path::PathBuf, std::path::PathBuf)> {
     let data_dir = data_dir()?;
     std::fs::create_dir_all(&data_dir)?;
 
@@ -27,34 +36,56 @@ fn ensure_data_dir() -> Result<(PathBuf, PathBuf)> {
     if !config_path.exists() {
         let default = config::defaults::default_config();
         default.save(&config_path)?;
-        println!("Created default config: {}", config_path.display());
     }
 
     if !items_path.exists() {
         let default = config::defaults::default_items();
         let provider = JsonProvider { path: items_path.clone() };
         provider.save(&default)?;
-        println!("Created default items: {}", items_path.display());
     }
 
     Ok((config_path, items_path))
 }
 
+fn run(config: Config, items: storage::Items) -> Result<()> {
+    terminal::enable_raw_mode()?;
+    execute!(io::stdout(), EnterAlternateScreen)?;
+
+    let backend = CrosstermBackend::new(io::stdout());
+    let mut terminal = Terminal::new(backend)?;
+
+    let app = App::new(config, items);
+
+    loop {
+        terminal.draw(|frame| ui::render(frame, &app))?;
+
+        if event::poll(Duration::from_millis(250))? {
+            if let Event::Key(key) = event::read()? {
+                if key.kind == KeyEventKind::Press && key.code == KeyCode::Char('q') {
+                    break;
+                }
+            }
+        }
+    }
+
+    terminal::disable_raw_mode()?;
+    execute!(io::stdout(), LeaveAlternateScreen)?;
+    terminal.show_cursor()?;
+
+    Ok(())
+}
+
 fn main() -> Result<()> {
     let (config_path, items_path) = ensure_data_dir()?;
-
     let config = Config::load(&config_path)?;
     let provider = JsonProvider { path: items_path };
     let items = provider.load()?;
 
-    println!(
-        "Loaded {} panel(s) | {} task(s) | {} JIRA item(s) | {} PR(s) | {} issue(s)",
-        config.panels.len(),
-        items.tasks.len(),
-        items.jira.len(),
-        items.github_prs.len(),
-        items.github_issues.len(),
-    );
+    if let Err(e) = run(config, items) {
+        terminal::disable_raw_mode().ok();
+        execute!(io::stdout(), LeaveAlternateScreen).ok();
+        return Err(e);
+    }
 
     Ok(())
 }
