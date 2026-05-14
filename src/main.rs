@@ -2,11 +2,13 @@ mod app;
 mod config;
 mod event;
 mod model;
+mod setup;
 mod storage;
 mod ui;
 mod widget;
 
 use std::io;
+use std::path::PathBuf;
 use std::time::Duration;
 
 use anyhow::Result;
@@ -23,7 +25,7 @@ use config::Config;
 use event::AppEvent;
 use storage::{json::JsonProvider, DataProvider};
 
-fn data_dir() -> Result<std::path::PathBuf> {
+fn data_dir() -> Result<PathBuf> {
     let exe = std::env::current_exe()?;
     let dir = exe
         .parent()
@@ -31,34 +33,23 @@ fn data_dir() -> Result<std::path::PathBuf> {
     Ok(dir.join(".planner_tui"))
 }
 
-fn ensure_data_dir() -> Result<(std::path::PathBuf, std::path::PathBuf)> {
-    let data_dir = data_dir()?;
-    std::fs::create_dir_all(&data_dir)?;
-
-    let config_path = data_dir.join("config.json");
-    let items_path = data_dir.join("items.json");
-
-    if !config_path.exists() {
-        let default = config::defaults::default_config();
-        default.save(&config_path)?;
-    }
-
-    if !items_path.exists() {
-        let default = config::defaults::default_items();
-        let provider = JsonProvider { path: items_path.clone() };
-        provider.save(&default)?;
-    }
-
-    Ok((config_path, items_path))
-}
-
-async fn run(config: Config, items: storage::Items) -> Result<()> {
+fn init_terminal() -> Result<Terminal<CrosstermBackend<io::Stdout>>> {
     terminal::enable_raw_mode()?;
     execute!(io::stdout(), EnterAlternateScreen, EnableMouseCapture)?;
+    Ok(Terminal::new(CrosstermBackend::new(io::stdout()))?)
+}
 
-    let backend = CrosstermBackend::new(io::stdout());
-    let mut terminal = Terminal::new(backend)?;
+fn restore_terminal(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) {
+    terminal::disable_raw_mode().ok();
+    execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture).ok();
+    terminal.show_cursor().ok();
+}
 
+async fn run_app(
+    terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
+    config: Config,
+    items: storage::Items,
+) -> Result<()> {
     let mut app = App::new(config, items);
 
     let (tx, mut rx) = mpsc::channel::<AppEvent>(32);
@@ -107,25 +98,52 @@ async fn run(config: Config, items: storage::Items) -> Result<()> {
         }
     }
 
-    terminal::disable_raw_mode()?;
-    execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture)?;
-    terminal.show_cursor()?;
-
     Ok(())
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let (config_path, items_path) = ensure_data_dir()?;
-    let config = Config::load(&config_path)?;
-    let provider = JsonProvider { path: items_path };
-    let items = provider.load()?;
+    let data_dir = data_dir()?;
+    let is_first_run = !data_dir.exists();
 
-    if let Err(e) = run(config, items).await {
-        terminal::disable_raw_mode().ok();
-        execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture).ok();
-        return Err(e);
-    }
+    let mut terminal = init_terminal()?;
 
-    Ok(())
+    let result = run_all(&mut terminal, data_dir, is_first_run).await;
+
+    restore_terminal(&mut terminal);
+    result
+}
+
+async fn run_all(
+    terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
+    data_dir: PathBuf,
+    is_first_run: bool,
+) -> Result<()> {
+    let config_path = data_dir.join("config.json");
+    let items_path = data_dir.join("items.json");
+
+    let (config, items) = if is_first_run {
+        std::fs::create_dir_all(&data_dir)?;
+
+        let result = setup::run(terminal)?;
+
+        result.config.save(&config_path)?;
+        JsonProvider { path: items_path }.save(&result.items)?;
+
+        (result.config, result.items)
+    } else {
+        if !config_path.exists() {
+            config::defaults::default_config().save(&config_path)?;
+        }
+        if !items_path.exists() {
+            JsonProvider { path: items_path.clone() }
+                .save(&config::defaults::default_items())?;
+        }
+        (
+            Config::load(&config_path)?,
+            JsonProvider { path: items_path }.load()?,
+        )
+    };
+
+    run_app(terminal, config, items).await
 }
