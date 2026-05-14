@@ -1,6 +1,7 @@
 mod config;
 mod model;
 mod storage;
+mod ui;
 
 use anyhow::Result;
 use std::path::PathBuf;
