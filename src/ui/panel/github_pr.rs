@@ -1,5 +1,5 @@
 use ratatui::layout::Rect;
-use ratatui::style::{Color, Style};
+use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, List, ListItem, ListState};
 use ratatui::Frame;
@@ -7,14 +7,17 @@ use ratatui::Frame;
 use crate::model::github::GithubPr;
 
 pub fn render(frame: &mut Frame, rect: Rect, prs: &[GithubPr], is_active: bool, scroll: usize) {
-    let border_style = if is_active {
-        Style::default().fg(Color::Cyan)
+    let (border_style, title_style) = if is_active {
+        (
+            Style::default().fg(Color::Cyan),
+            Style::default().fg(Color::Black).bg(Color::Cyan).add_modifier(Modifier::BOLD),
+        )
     } else {
-        Style::default().fg(Color::White)
+        (Style::default().fg(Color::White), Style::default().fg(Color::White))
     };
 
     let block = Block::default()
-        .title("GitHub PRs")
+        .title(Span::styled(" GitHub PRs ", title_style))
         .borders(Borders::ALL)
         .border_style(border_style);
 
