@@ -1,5 +1,7 @@
 # PlannerTUI
 
+[![CI](https://github.com/nitr-himanshu/PlannerTUI/actions/workflows/ci.yml/badge.svg)](https://github.com/nitr-himanshu/PlannerTUI/actions/workflows/ci.yml)
+
 A customizable, Rust-based terminal user interface for managing tasks, JIRA issues, and GitHub items — all in one configurable grid dashboard.
 
 ---
@@ -192,7 +194,7 @@ src/
 **Prerequisites:** Rust stable toolchain ([rustup.rs](https://rustup.rs))
 
 ```bash
-git clone https://github.com/your-org/PlannerTUI
+git clone https://github.com/nitr-himanshu/PlannerTUI
 cd PlannerTUI
 cargo build --release
 ```

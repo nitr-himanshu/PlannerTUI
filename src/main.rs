@@ -66,16 +66,8 @@ async fn run(config: Config, items: storage::Items) -> Result<()> {
     tokio::task::spawn_blocking(move || loop {
         if crossterm::event::poll(Duration::from_millis(100)).unwrap_or(false) {
             match crossterm::event::read() {
-                Ok(Event::Key(key)) => {
-                    if tx.blocking_send(AppEvent::Key(key)).is_err() {
-                        break;
-                    }
-                }
-                Ok(Event::Mouse(mouse)) => {
-                    if tx.blocking_send(AppEvent::Mouse(mouse)).is_err() {
-                        break;
-                    }
-                }
+                Ok(Event::Key(key)) if tx.blocking_send(AppEvent::Key(key)).is_err() => break,
+                Ok(Event::Mouse(mouse)) if tx.blocking_send(AppEvent::Mouse(mouse)).is_err() => break,
                 _ => {}
             }
         }

@@ -76,19 +76,19 @@ impl App {
 
     pub fn toggle_active_timer(&mut self) {
         let id = self.config.panels.get(self.active_panel).map(|p| p.id.clone());
-        if let Some(id) = id {
-            if let Some(timer) = self.timers.get_mut(&id) {
-                timer.toggle();
-            }
+        if let Some(id) = id
+            && let Some(timer) = self.timers.get_mut(&id)
+        {
+            timer.toggle();
         }
     }
 
     pub fn reset_active_timer(&mut self) {
         let id = self.config.panels.get(self.active_panel).map(|p| p.id.clone());
-        if let Some(id) = id {
-            if let Some(timer) = self.timers.get_mut(&id) {
-                timer.reset();
-            }
+        if let Some(id) = id
+            && let Some(timer) = self.timers.get_mut(&id)
+        {
+            timer.reset();
         }
     }
 }

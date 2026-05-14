@@ -35,7 +35,7 @@ pub fn resolve(config: &Config, area: Rect) -> Result<Vec<ResolvedPanel>> {
             let h = p.span.row_span as u16 * cell_h;
             ResolvedPanel {
                 id: p.id.clone(),
-                panel_type: p.panel_type.clone(),
+                panel_type: p.panel_type,
                 rect: Rect::new(x, y, w, h),
             }
         })

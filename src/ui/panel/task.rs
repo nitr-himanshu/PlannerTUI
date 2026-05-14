@@ -26,14 +26,14 @@ fn priority_label(priority: &Priority) -> &'static str {
 
 fn parse_hex_color(hex: &str) -> Color {
     let hex = hex.trim_start_matches('#');
-    if hex.len() == 6 {
-        if let (Ok(r), Ok(g), Ok(b)) = (
+    if hex.len() == 6
+        && let (Ok(r), Ok(g), Ok(b)) = (
             u8::from_str_radix(&hex[0..2], 16),
             u8::from_str_radix(&hex[2..4], 16),
             u8::from_str_radix(&hex[4..6], 16),
-        ) {
-            return Color::Rgb(r, g, b);
-        }
+        )
+    {
+        return Color::Rgb(r, g, b);
     }
     Color::White
 }
