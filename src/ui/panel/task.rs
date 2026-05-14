@@ -1,7 +1,7 @@
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, List, ListItem};
+use ratatui::widgets::{Block, Borders, List, ListItem, ListState};
 use ratatui::Frame;
 
 use crate::model::task::{Priority, Task};
@@ -38,7 +38,7 @@ fn parse_hex_color(hex: &str) -> Color {
     Color::White
 }
 
-pub fn render(frame: &mut Frame, rect: Rect, tasks: &[Task], is_active: bool) {
+pub fn render(frame: &mut Frame, rect: Rect, tasks: &[Task], is_active: bool, scroll: usize) {
     let border_style = if is_active {
         Style::default().fg(Color::Cyan)
     } else {
@@ -58,10 +58,7 @@ pub fn render(frame: &mut Frame, rect: Rect, tasks: &[Task], is_active: bool) {
             let label = priority_label(&task.priority);
             let line = Line::from(vec![
                 Span::styled("█ ", Style::default().fg(color)),
-                Span::styled(
-                    format!("[{label}] "),
-                    Style::default().fg(prio_color),
-                ),
+                Span::styled(format!("[{label}] "), Style::default().fg(prio_color)),
                 Span::raw(task.title.clone()),
                 Span::styled(
                     format!("  {}", task.deadline),
@@ -73,5 +70,7 @@ pub fn render(frame: &mut Frame, rect: Rect, tasks: &[Task], is_active: bool) {
         .collect();
 
     let list = List::new(items).block(block);
-    frame.render_widget(list, rect);
+    let mut state = ListState::default();
+    *state.offset_mut() = scroll.min(tasks.len().saturating_sub(1));
+    frame.render_stateful_widget(list, rect, &mut state);
 }

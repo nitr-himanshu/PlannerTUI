@@ -19,18 +19,19 @@ pub fn render(frame: &mut Frame, app: &App) {
         Ok(resolved_panels) => {
             for (i, resolved) in resolved_panels.iter().enumerate() {
                 let is_active = i == app.active_panel;
+                let scroll = app.scroll_offsets.get(&resolved.id).copied().unwrap_or(0);
                 match resolved.panel_type {
                     PanelType::Task => {
-                        panel::task::render(frame, resolved.rect, &app.items.tasks, is_active)
+                        panel::task::render(frame, resolved.rect, &app.items.tasks, is_active, scroll)
                     }
                     PanelType::Jira => {
-                        panel::jira::render(frame, resolved.rect, &app.items.jira, is_active)
+                        panel::jira::render(frame, resolved.rect, &app.items.jira, is_active, scroll)
                     }
                     PanelType::GithubPr => {
-                        panel::github_pr::render(frame, resolved.rect, &app.items.github_prs, is_active)
+                        panel::github_pr::render(frame, resolved.rect, &app.items.github_prs, is_active, scroll)
                     }
                     PanelType::GithubIssue => {
-                        panel::github_issue::render(frame, resolved.rect, &app.items.github_issues, is_active)
+                        panel::github_issue::render(frame, resolved.rect, &app.items.github_issues, is_active, scroll)
                     }
                     PanelType::Timer => {
                         let timer = app.timers.get(&resolved.id);

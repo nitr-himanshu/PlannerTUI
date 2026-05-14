@@ -15,7 +15,7 @@ pub fn render(frame: &mut Frame, rect: Rect, app: &App) {
         .unwrap_or("none");
 
     let time = Local::now().format("%H:%M:%S").to_string();
-    let text = format!(" {panel_name} │ q: quit │ {time}");
+    let text = format!(" {panel_name} │ Tab: next │ ↑↓: scroll │ q: quit │ {time}");
 
     let paragraph = Paragraph::new(text)
         .style(Style::default().fg(Color::Black).bg(Color::White));

@@ -1,5 +1,6 @@
 mod app;
 mod config;
+mod event;
 mod model;
 mod storage;
 mod ui;
@@ -9,15 +10,17 @@ use std::io;
 use std::time::Duration;
 
 use anyhow::Result;
-use crossterm::event::{Event, KeyCode, KeyEventKind};
+use crossterm::event::{DisableMouseCapture, EnableMouseCapture, Event};
 use crossterm::execute;
 use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
 use ratatui::backend::CrosstermBackend;
+use ratatui::layout::Rect;
 use ratatui::Terminal;
 use tokio::sync::mpsc;
 
 use app::App;
 use config::Config;
+use event::AppEvent;
 use storage::{json::JsonProvider, DataProvider};
 
 fn data_dir() -> Result<std::path::PathBuf> {
@@ -51,21 +54,29 @@ fn ensure_data_dir() -> Result<(std::path::PathBuf, std::path::PathBuf)> {
 
 async fn run(config: Config, items: storage::Items) -> Result<()> {
     terminal::enable_raw_mode()?;
-    execute!(io::stdout(), EnterAlternateScreen)?;
+    execute!(io::stdout(), EnterAlternateScreen, EnableMouseCapture)?;
 
     let backend = CrosstermBackend::new(io::stdout());
     let mut terminal = Terminal::new(backend)?;
 
     let mut app = App::new(config, items);
 
-    let (tx, mut rx) = mpsc::channel::<crossterm::event::KeyEvent>(32);
+    let (tx, mut rx) = mpsc::channel::<AppEvent>(32);
 
     tokio::task::spawn_blocking(move || loop {
         if crossterm::event::poll(Duration::from_millis(100)).unwrap_or(false) {
-            if let Ok(Event::Key(key)) = crossterm::event::read() {
-                if tx.blocking_send(key).is_err() {
-                    break;
+            match crossterm::event::read() {
+                Ok(Event::Key(key)) => {
+                    if tx.blocking_send(AppEvent::Key(key)).is_err() {
+                        break;
+                    }
                 }
+                Ok(Event::Mouse(mouse)) => {
+                    if tx.blocking_send(AppEvent::Mouse(mouse)).is_err() {
+                        break;
+                    }
+                }
+                _ => {}
             }
         }
     });
@@ -73,20 +84,31 @@ async fn run(config: Config, items: storage::Items) -> Result<()> {
     let mut tick = tokio::time::interval(Duration::from_secs(1));
     tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
+    let mut panel_layout: Vec<(usize, Rect)> = Vec::new();
+
     loop {
+        if let Ok((cols, rows)) = crossterm::terminal::size() {
+            let main_area = Rect::new(0, 0, cols, rows.saturating_sub(1));
+            if let Ok(resolved) = ui::grid::resolve(&app.config, main_area) {
+                panel_layout = resolved.iter().enumerate().map(|(i, p)| (i, p.rect)).collect();
+            }
+        }
+
         terminal.draw(|frame| ui::render(frame, &app))?;
 
         tokio::select! {
             _ = tick.tick() => {
                 app.on_tick();
             }
-            Some(key) = rx.recv() => {
-                if key.kind == KeyEventKind::Press {
-                    match key.code {
-                        KeyCode::Char('q') => break,
-                        KeyCode::Char(' ') => app.toggle_active_timer(),
-                        KeyCode::Char('r') => app.reset_active_timer(),
-                        _ => {}
+            Some(ev) = rx.recv() => {
+                match ev {
+                    AppEvent::Key(key) => {
+                        if event::keyboard::handle(key, &mut app) {
+                            break;
+                        }
+                    }
+                    AppEvent::Mouse(mouse) => {
+                        event::mouse::handle(mouse, &mut app, &panel_layout);
                     }
                 }
             }
@@ -94,7 +116,7 @@ async fn run(config: Config, items: storage::Items) -> Result<()> {
     }
 
     terminal::disable_raw_mode()?;
-    execute!(io::stdout(), LeaveAlternateScreen)?;
+    execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture)?;
     terminal.show_cursor()?;
 
     Ok(())
@@ -109,7 +131,7 @@ async fn main() -> Result<()> {
 
     if let Err(e) = run(config, items).await {
         terminal::disable_raw_mode().ok();
-        execute!(io::stdout(), LeaveAlternateScreen).ok();
+        execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture).ok();
         return Err(e);
     }
 
