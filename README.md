@@ -6,6 +6,9 @@ A customizable, Rust-based terminal user interface for managing tasks, JIRA issu
 
 ---
 
+![snapshot1](docs/snapshot1.png)
+![snapshot2](docs/snapshot2.png)
+
 ## Features
 
 - **Grid dashboard** — up to 4 columns × 2 rows, fully configurable
