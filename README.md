@@ -2,21 +2,22 @@
 
 [![CI](https://github.com/nitr-himanshu/PlannerTUI/actions/workflows/ci.yml/badge.svg)](https://github.com/nitr-himanshu/PlannerTUI/actions/workflows/ci.yml)
 
-A customizable, Rust-based terminal user interface for managing tasks, JIRA issues, and GitHub items — all in one configurable grid dashboard.
+A customizable, Rust-based terminal dashboard for managing tasks, JIRA issues, GitHub items, and focus timers — all in one configurable grid.
 
 ---
 
-![snapshot1](docs/snapshot1.png)
-![snapshot2](docs/snapshot2.png)
-
 ## Features
 
-- **Grid dashboard** — up to 4 columns × 2 rows, fully configurable
-- **Cell merging** — merge adjacent cells to create wider or taller panels
-- **Multiple item types** — Tasks, JIRA issues, GitHub PRs, GitHub Issues
-- **Timer widget** — countdown or countup, placeable in any cell
-- **Mouse support** — click to focus panels, scroll content, click links
-- **Status bar** — active panel, mode, clock, keybinding hints
+- **Setup wizard** — interactive first-run guide that configures your layout based on what you need
+- **Grid dashboard** — up to 4 columns × 2 rows; panels are fully configurable and cells can be merged
+- **5 panel types** — Tasks, JIRA, GitHub PRs, GitHub Issues, Timer
+- **Full CRUD** — add, edit, delete items directly from the list view; read full detail with `Enter`
+- **Task form** — priority picker (Low / Medium / High / Critical), 10 predefined dark-mode color swatches
+- **Timer widget** — live countdown or countup, vertically centered big-text display, editable duration
+- **Clickable links** — press `o` in any detail view to open the URL in your default browser
+- **Mouse support** — click to focus a panel, scroll wheel to navigate items
+- **Status bar** — context-aware keybinding hints that change per mode
+- **AI sync skill** — populate `items.json` automatically via Claude + MCP (no API tokens needed)
 - **JSON-backed** — human-editable `config.json` and `items.json`, no database required
 - **Cross-platform** — Windows and Linux
 
@@ -24,32 +25,110 @@ A customizable, Rust-based terminal user interface for managing tasks, JIRA issu
 
 ## Quick Start
 
-1. Download the binary for your platform from the Releases page
-2. Run it — on first launch it creates `.planner_tui/` next to the executable:
+1. Download the binary for your platform from the [Releases](https://github.com/nitr-himanshu/PlannerTUI/releases) page
+2. Run it — on first launch an interactive wizard guides you through setup:
+   - Choose which panels to enable (Tasks, GitHub PRs, GitHub Issues, JIRA, Timer)
+   - Pick a suggested grid layout
+   - Learn how to edit `config.json`, `items.json`, and the AI sync skill
+3. Your dashboard launches automatically when the wizard finishes
 
-   ```text
-   <executable-dir>/
-   └── .planner_tui/
-       ├── config.json   # grid layout and panel assignments
-       └── items.json    # your tasks, JIRA items, and GitHub refs
-   ```
+Files created next to the executable:
 
-3. Edit `config.json` to set your layout, then edit `items.json` to add your items
-4. Re-run the binary — your dashboard loads automatically
+```text
+<executable-dir>/
+└── .planner_tui/
+    ├── config.json   # grid layout and panel assignments
+    └── items.json    # your tasks, JIRA items, and GitHub refs
+```
+
+---
+
+## Keybindings
+
+### List view (default)
+
+| Key | Action |
+| --- | --- |
+| `Tab` / `Shift+Tab` | Move focus to next / previous panel |
+| `↑` `↓` | Move selection cursor within the focused panel |
+| `Enter` | Open read-only detail view for the selected item |
+| `a` | Add a new item to the focused panel |
+| `e` | Edit the selected item (or edit timer settings) |
+| `d` | Delete the selected item (with confirmation) |
+| `Space` | Start / pause the focused timer |
+| `r` | Reset the focused timer |
+| `q` | Quit |
+
+Mouse: click any panel to focus it; scroll wheel moves the selection cursor.
+
+### Detail view (read-only)
+
+| Key | Action |
+| --- | --- |
+| `o` | Open the item's link in the default browser |
+| `Esc` | Back to list |
+
+### Edit / Add dialog
+
+| Key | Action |
+| --- | --- |
+| `↑` `↓` / `Tab` | Move between fields |
+| `←` `→` | Cycle options on Priority, Color, and Mode fields |
+| `Ctrl+S` | Save |
+| `Esc` | Cancel |
+
+---
+
+## Item Types
+
+### Task
+
+| Field | Notes |
+| --- | --- |
+| Title | Task name |
+| Description | Optional details |
+| Deadline | ISO 8601 date-time (e.g. `2026-05-20T18:00:00`) |
+| Priority | `Low` · `Medium` · `High` · `Critical` — color-coded picker |
+| Color | Choose from 10 dark-mode swatches (Coral, Amber, Yellow, Sky, Mint, Blue, Lavender, Pink, Teal, Gold) |
+
+Task IDs are auto-generated on creation.
+
+### JIRA
+
+| Field | Notes |
+| --- | --- |
+| ID | Issue key, e.g. `PROJ-42` |
+| Title | Issue summary |
+| Link | URL — press `o` in detail view to open |
+| Description | Short description |
+| Comment | Latest comment |
+
+### GitHub PR / Issue
+
+| Field | Notes |
+| --- | --- |
+| ID | e.g. `org/repo#123` |
+| Link | URL — press `o` in detail view to open |
+| Description | Optional notes |
+
+### Timer
+
+Editable fields (press `e`):
+
+| Field | Notes |
+| --- | --- |
+| Mode | `Countdown` or `Countup` |
+| Minutes | Duration for countdown mode |
+
+The timer renders as large block characters that scale to the panel size. Timer settings are saved to `config.json`.
 
 ---
 
 ## Layout Configuration (`config.json`)
 
-The grid supports up to **4 columns × 2 rows**. Panels are zero-indexed from the top-left.
-Set `col_span` / `row_span` greater than 1 to merge cells.
-
 ```json
 {
-  "grid": {
-    "columns": 3,
-    "rows": 2
-  },
+  "grid": { "columns": 3, "rows": 2 },
   "panels": [
     {
       "id": "panel-1",
@@ -68,10 +147,7 @@ Set `col_span` / `row_span` greater than 1 to merge cells.
       "cell": { "col": 0, "row": 1 },
       "span": { "col_span": 1, "row_span": 1 },
       "type": "timer",
-      "widget": {
-        "mode": "countdown",
-        "duration_seconds": 1500
-      }
+      "widget": { "mode": "countdown", "duration_seconds": 1500 }
     },
     {
       "id": "panel-4",
@@ -83,7 +159,10 @@ Set `col_span` / `row_span` greater than 1 to merge cells.
 }
 ```
 
-**Panel types:** `task` · `jira` · `github_pr` · `github_issue` · `timer`
+- `cell` — zero-indexed top-left origin of the panel
+- `span` — how many columns/rows the panel occupies (merged cells)
+- `type` — `task` · `jira` · `github_pr` · `github_issue` · `timer`
+- Maximum grid: 4 columns × 2 rows
 
 ---
 
@@ -93,8 +172,9 @@ Set `col_span` / `row_span` greater than 1 to merge cells.
 {
   "tasks": [
     {
-      "id": "task-1",
+      "id": "task-1713000000000",
       "title": "Implement login flow",
+      "description": "OAuth2 via GitHub",
       "deadline": "2026-05-20T18:00:00",
       "priority": "High",
       "color": "#FF6B6B"
@@ -105,54 +185,38 @@ Set `col_span` / `row_span` greater than 1 to merge cells.
       "id": "PROJ-42",
       "title": "API rate limiting",
       "link": "https://your-org.atlassian.net/browse/PROJ-42",
-      "description": "Implement rate limiting on all public endpoints",
-      "comment": "Will use token bucket algorithm"
+      "description": "Implement rate limiting on public endpoints",
+      "comment": "Token bucket algorithm proposed"
     }
   ],
   "github_prs": [
     {
       "id": "org/repo#123",
-      "link": "https://github.com/org/repo/pull/123"
+      "link": "https://github.com/org/repo/pull/123",
+      "description": ""
     }
   ],
   "github_issues": [
     {
       "id": "org/repo#456",
-      "link": "https://github.com/org/repo/issues/456"
+      "link": "https://github.com/org/repo/issues/456",
+      "description": ""
     }
   ]
 }
 ```
 
-**Priority values:** `Low` · `Medium` · `High` · `Critical`
-
-**Color:** any hex color string, e.g. `#FF6B6B`
-
 ---
 
-## Syncing Items with AI (Sync Skill)
+## AI Sync Skill
 
-If you use Claude with MCP servers (GitHub MCP, JIRA MCP), you can populate `items.json`
-automatically without setting up any API tokens.
+Populate `items.json` automatically using Claude and your connected MCP servers — no API tokens or credentials needed.
 
-Open [`docs/sync-skill.md`](docs/sync-skill.md) in Claude and say: **"Follow the sync skill."**
+1. Open [`docs/sync-skill.md`](docs/sync-skill.md) in Claude
+2. Say: **"Follow the sync skill"**
+3. Claude detects your GitHub / JIRA MCP connections, asks for filters, fetches live data, and writes `items.json`
 
-Claude will detect your connected MCP services, ask for filter conditions (repos, JQL query, etc.),
-fetch the data, and write `items.json` for you. Re-run any time to refresh.
-
----
-
-## Keybindings
-
-| Key | Action |
-| --- | --- |
-| `Tab` / `Shift+Tab` | Move focus to next / previous panel |
-| `↑` `↓` | Scroll content within the focused panel |
-| `q` | Quit |
-| `Space` | Start / pause timer (when timer panel is focused) |
-| `r` | Reset timer |
-
-Mouse is also supported — click any panel to focus it, scroll to navigate content.
+Re-run any time to refresh your dashboard.
 
 ---
 
@@ -160,34 +224,37 @@ Mouse is also supported — click any panel to focus it, scroll to navigate cont
 
 ```text
 src/
-├── main.rs               # entry point and run loop
-├── app.rs                # global app state
+├── main.rs               # entry point and async run loop
+├── app.rs                # global app state and all CRUD logic
 ├── config/
 │   ├── mod.rs            # Config struct, loader/saver
-│   └── defaults.rs       # default config.json generation
+│   └── defaults.rs       # default config and sample items
 ├── model/
-│   ├── task.rs           # Task struct
-│   ├── jira.rs           # JiraItem struct
-│   └── github.rs         # GithubPr, GithubIssue structs
+│   ├── task.rs           # Task { id, title, description, deadline, priority, color }
+│   ├── jira.rs           # JiraItem { id, title, link, description, comment }
+│   └── github.rs         # GithubPr, GithubIssue { id, link, description }
 ├── storage/
 │   ├── mod.rs            # DataProvider trait
-│   └── json.rs           # JSON file backend (v1)
+│   └── json.rs           # JSON file backend
+├── setup/                # first-run interactive wizard
 ├── ui/
-│   ├── mod.rs            # top-level render entry
-│   ├── grid.rs           # grid layout engine
-│   ├── status_bar.rs     # bottom status bar
+│   ├── mod.rs            # top-level render dispatcher
+│   ├── grid.rs           # grid layout engine (resolves panel Rects)
+│   ├── status_bar.rs     # context-aware bottom bar
+│   ├── detail.rs         # read-only item detail overlay
+│   ├── dialog.rs         # add/edit/delete confirmation dialogs
 │   └── panel/
 │       ├── task.rs
 │       ├── jira.rs
 │       ├── github_pr.rs
 │       ├── github_issue.rs
-│       └── timer.rs
+│       └── timer.rs      # big-text timer with dynamic pixel size
 ├── widget/
-│   └── timer.rs          # timer state and tick logic
+│   └── timer.rs          # TimerState — tick, toggle, reset, format
 └── event/
-    ├── mod.rs            # event loop
-    ├── keyboard.rs       # keyboard handler
-    └── mouse.rs          # mouse handler
+    ├── mod.rs            # AppEvent enum
+    ├── keyboard.rs       # mode-aware keyboard handler
+    └── mouse.rs          # click-to-focus, scroll (gated by AppMode)
 ```
 
 ---
@@ -202,7 +269,7 @@ cd PlannerTUI
 cargo build --release
 ```
 
-Binary output: `target/release/planner_tui` (Linux) or `target/release/planner_tui.exe` (Windows)
+Binary: `target/release/planner_tui` (Linux) · `target/release/planner_tui.exe` (Windows)
 
 ---
 
@@ -212,10 +279,12 @@ Binary output: `target/release/planner_tui` (Linux) or `target/release/planner_t
 | --- | --- |
 | `ratatui` | TUI rendering framework |
 | `crossterm` | Cross-platform terminal backend |
+| `tui-big-text` | Large block-character timer display |
 | `serde` + `serde_json` | JSON serialization |
-| `chrono` | Deadline formatting and timer |
+| `chrono` | Deadline formatting and timestamps |
+| `tokio` | Async runtime for timer ticks and event handling |
+| `open` | Opens URLs in the default browser |
 | `anyhow` | Error handling |
-| `tokio` | Async runtime for timer ticks |
 
 ---
 
@@ -223,12 +292,15 @@ Binary output: `target/release/planner_tui` (Linux) or `target/release/planner_t
 
 | Feature | Status |
 | --- | --- |
-| Grid layout + cell merging | Planned |
-| Task, JIRA, GitHub panel types | Planned |
-| Timer widget | Planned |
-| Mouse support | Planned |
-| JSON data backend | Planned |
+| Setup wizard | Done |
+| Grid layout + cell merging | Done |
+| Task, JIRA, GitHub panel types | Done |
+| Full CRUD (add, edit, delete, detail view) | Done |
+| Timer widget with big-text display | Done |
+| Mouse support | Done |
+| Clickable links (`o` to open) | Done |
 | AI sync skill (Claude MCP) | Done |
+| GitHub Actions release workflow | Done |
 | SQLite backend | Future |
 | JIRA REST API provider | Future |
 | GitHub REST API provider | Future |
