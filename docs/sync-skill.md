@@ -16,8 +16,9 @@ Run this skill by opening it and saying: **"Follow the sync skill."**
 2. Claude reports which data sources it found and asks you for filter conditions
 3. Claude fetches the data using those MCP tools
 4. Claude writes the results into `.planner_tui/items.json`
+5. Claude saves your filters as a **one-click refresh skill** — run `/refresh-planner` any time to re-sync without re-entering filters
 
-You can re-run the skill at any time to refresh the data.
+The first run sets everything up. Every run after that is a single command.
 
 ---
 
@@ -147,7 +148,62 @@ Tell the user:
 
 - How many items were written per category
 - Which categories were skipped (MCP not available) and which MCP to add to enable them
-- Remind them they can re-run this skill at any time to refresh
+
+---
+
+### Step 7 — Save a Refresh Skill
+
+Create a file at `.claude/commands/refresh-planner.md` in the project root (create the
+`.claude/commands/` directory if it does not exist).
+
+The file must contain a self-contained version of this skill with the user's exact filter
+conditions already filled in — no questions asked, no configuration needed.
+
+Use this template, replacing every `<placeholder>` with the actual values collected in Step 2:
+
+````markdown
+# PlannerTUI — Refresh Data
+
+Fetch the latest data from connected MCP sources and update `.planner_tui/items.json`.
+
+## Filters (pre-configured)
+
+<!-- Replace the values below with what the user gave in the original sync session -->
+
+```yaml
+github:
+  prs:
+    - repo: "<org/repo>"
+      assigned_to_me: <true|false>
+  issues:
+    - repo: "<org/repo>"
+      labels: [<label1>, <label2>]
+      assigned_to_me: <true|false>
+
+jira:
+  jql: "<paste the JQL or Linear filter here>"
+```
+
+## Instructions for AI
+
+Follow every step in order without asking for any filter conditions — they are set above.
+
+1. Using the filters above, call the available GitHub and/or JIRA MCP tools to fetch data.
+   Apply the same transform rules as the original sync skill.
+2. Read `.planner_tui/items.json`. Preserve `tasks` exactly. Replace `jira`, `github_prs`,
+   and `github_issues` with fresh data.
+3. Write the merged result back to `.planner_tui/items.json` with 2-space indentation.
+4. Report how many items were written per category.
+````
+
+After writing the file, tell the user:
+
+> **Refresh skill saved.**
+> Open this project in Claude Code and run **`/refresh-planner`** any time to re-sync
+> your dashboard with one command — no filters needed.
+>
+> The skill is stored at `.claude/commands/refresh-planner.md`. You can edit the filters
+> there at any time.
 
 ---
 
