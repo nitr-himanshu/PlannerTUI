@@ -1,6 +1,7 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 
 use crate::app::{App, AppMode};
+use crate::config::PanelType;
 
 pub fn handle(key: KeyEvent, app: &mut App) -> bool {
     if key.kind != KeyEventKind::Press {
@@ -16,16 +17,17 @@ pub fn handle(key: KeyEvent, app: &mut App) -> bool {
 }
 
 fn handle_list(key: KeyEvent, app: &mut App) -> bool {
+    let is_timer = matches!(app.active_panel_type(), Some(PanelType::Timer));
     match key.code {
         KeyCode::Char('q') => return true,
         KeyCode::Tab => app.next_panel(),
         KeyCode::BackTab => app.prev_panel(),
         KeyCode::Down => app.select_down(),
         KeyCode::Up => app.select_up(),
-        KeyCode::Enter => app.open_detail(),
-        KeyCode::Char('a') => app.open_add(),
+        KeyCode::Enter if !is_timer => app.open_detail(),
+        KeyCode::Char('a') if !is_timer => app.open_add(),
         KeyCode::Char('e') => app.open_edit(),
-        KeyCode::Char('d') => app.open_delete_confirm(),
+        KeyCode::Char('d') if !is_timer => app.open_delete_confirm(),
         KeyCode::Char(' ') => app.toggle_active_timer(),
         KeyCode::Char('r') => app.reset_active_timer(),
         _ => {}

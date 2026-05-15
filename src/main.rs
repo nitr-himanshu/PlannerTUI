@@ -50,8 +50,9 @@ async fn run_app(
     config: Config,
     items: storage::Items,
     items_path: PathBuf,
+    config_path: PathBuf,
 ) -> Result<()> {
-    let mut app = App::new(config, items, items_path);
+    let mut app = App::new(config, items, items_path, config_path);
 
     let (tx, mut rx) = mpsc::channel::<AppEvent>(32);
 
@@ -146,5 +147,5 @@ async fn run_all(
         )
     };
 
-    run_app(terminal, config, items, items_path).await
+    run_app(terminal, config, items, items_path, config_path.clone()).await
 }

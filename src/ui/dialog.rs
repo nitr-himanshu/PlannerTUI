@@ -4,7 +4,7 @@ use ratatui::text::{Line, Span, Text};
 use ratatui::widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph};
 use ratatui::Frame;
 
-use crate::app::{App, PRIORITY_OPTIONS, TASK_COLORS};
+use crate::app::{App, PRIORITY_OPTIONS, TASK_COLORS, TIMER_MODES};
 
 pub fn render_edit(frame: &mut Frame, app: &App) {
     let area = centered_rect(68, 75, frame.area());
@@ -38,6 +38,7 @@ pub fn render_edit(frame: &mut Frame, app: &App) {
             match f.label {
                 "Priority" => priority_item(&f.value, is_focused),
                 "Color" => color_item(&f.value, is_focused),
+                "Mode" => mode_item(&f.value, is_focused),
                 _ => text_item(f.label, &f.value, is_focused),
             }
         })
@@ -137,6 +138,27 @@ fn color_item(value: &str, is_focused: bool) -> ListItem<'static> {
         spans.push(Span::raw(" "));
     }
 
+    ListItem::new(Line::from(spans))
+}
+
+fn mode_item(value: &str, is_focused: bool) -> ListItem<'static> {
+    let label_span = Span::styled(
+        format!("{:<14}", "Mode"),
+        Style::default().fg(if is_focused { Color::Yellow } else { Color::DarkGray }),
+    );
+    let mut spans = vec![label_span, Span::raw(": ")];
+    for mode in TIMER_MODES {
+        let is_selected = *mode == value;
+        if is_selected {
+            spans.push(Span::styled(
+                format!("[{mode}]"),
+                Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+            ));
+        } else {
+            spans.push(Span::styled(mode.to_string(), Style::default().fg(Color::DarkGray)));
+        }
+        spans.push(Span::raw("  "));
+    }
     ListItem::new(Line::from(spans))
 }
 

@@ -5,6 +5,7 @@ use ratatui::widgets::Paragraph;
 use ratatui::Frame;
 
 use crate::app::{App, AppMode};
+use crate::config::PanelType;
 
 pub fn render(frame: &mut Frame, rect: Rect, app: &App) {
     let panel_name = app
@@ -17,6 +18,9 @@ pub fn render(frame: &mut Frame, rect: Rect, app: &App) {
     let time = Local::now().format("%H:%M:%S").to_string();
 
     let hint = match app.mode {
+        AppMode::List if matches!(app.active_panel_type(), Some(PanelType::Timer)) => {
+            format!(" {panel_name} │ e: edit timer │ Space: start/pause │ r: reset │ Tab: next │ q: quit │ {time}")
+        }
         AppMode::List => format!(
             " {panel_name} │ Tab: next │ ↑↓: select │ Enter: view │ a: add │ e: edit │ d: delete │ q: quit │ {time}"
         ),

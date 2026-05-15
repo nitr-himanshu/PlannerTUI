@@ -10,6 +10,7 @@ use crate::storage::{json::JsonProvider, DataProvider, Items};
 use crate::widget::timer::{TimerMode, TimerState};
 
 pub const PRIORITY_OPTIONS: &[&str] = &["Low", "Medium", "High", "Critical"];
+pub const TIMER_MODES: &[&str] = &["Countdown", "Countup"];
 
 pub const TASK_COLORS: &[(&str, &str)] = &[
     ("#FF6B6B", "Coral"),
@@ -40,6 +41,7 @@ pub struct App {
     pub config: Config,
     pub items: Items,
     pub items_path: PathBuf,
+    pub config_path: PathBuf,
     pub active_panel: usize,
     pub timers: HashMap<String, TimerState>,
     pub selected_items: HashMap<String, usize>,
@@ -50,7 +52,7 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(config: Config, items: Items, items_path: PathBuf) -> Self {
+    pub fn new(config: Config, items: Items, items_path: PathBuf, config_path: PathBuf) -> Self {
         let timers = config
             .panels
             .iter()
@@ -69,6 +71,7 @@ impl App {
             config,
             items,
             items_path,
+            config_path,
             active_panel: 0,
             timers,
             selected_items: HashMap::new(),
@@ -215,7 +218,7 @@ impl App {
     pub fn is_current_field_cycle(&self) -> bool {
         matches!(
             self.edit_fields.get(self.edit_field_cursor).map(|f| f.label),
-            Some("Priority") | Some("Color")
+            Some("Priority") | Some("Color") | Some("Mode")
         )
     }
 
@@ -223,6 +226,7 @@ impl App {
         match self.edit_fields.get(self.edit_field_cursor).map(|f| f.label) {
             Some("Priority") => self.cycle_priority(1),
             Some("Color") => self.cycle_color(1),
+            Some("Mode") => self.cycle_mode(1),
             _ => {}
         }
     }
@@ -231,7 +235,18 @@ impl App {
         match self.edit_fields.get(self.edit_field_cursor).map(|f| f.label) {
             Some("Priority") => self.cycle_priority(-1),
             Some("Color") => self.cycle_color(-1),
+            Some("Mode") => self.cycle_mode(-1),
             _ => {}
+        }
+    }
+
+    fn cycle_mode(&mut self, dir: i32) {
+        let current = self.get_field("Mode");
+        let n = TIMER_MODES.len() as i32;
+        let idx = TIMER_MODES.iter().position(|&m| m == current.as_str()).unwrap_or(0) as i32;
+        let next = (idx + dir).rem_euclid(n) as usize;
+        if let Some(f) = self.edit_fields.iter_mut().find(|f| f.label == "Mode") {
+            f.value = TIMER_MODES[next].to_string();
         }
     }
 
@@ -268,6 +283,30 @@ impl App {
     }
 
     pub fn save_edit(&mut self) {
+        if self.active_panel_type() == Some(PanelType::Timer) {
+            let mode_str = self.get_field("Mode");
+            let minutes: u64 = self.get_field("Minutes").parse().unwrap_or(25);
+            let duration_secs = minutes * 60;
+            let id = self.active_panel_id().map(str::to_string);
+            if let Some(id) = id {
+                let new_state = if mode_str == "Countdown" {
+                    TimerState::new_countdown(duration_secs)
+                } else {
+                    TimerState::new_countup()
+                };
+                self.timers.insert(id.clone(), new_state);
+                if let Some(panel) = self.config.panels.iter_mut().find(|p| p.id == id) {
+                    panel.widget = Some(crate::config::TimerWidget {
+                        mode: mode_str.to_lowercase(),
+                        duration_seconds: duration_secs,
+                    });
+                }
+            }
+            self.config.save(&self.config_path).ok();
+            self.mode = AppMode::List;
+            return;
+        }
+
         match self.active_panel_type() {
             Some(PanelType::Task) => {
                 let item = self.fields_to_task();
@@ -494,6 +533,16 @@ impl App {
     }
 
     fn fields_for_selected(&self) -> Vec<EditField> {
+        if self.active_panel_type() == Some(PanelType::Timer) {
+            let id = match self.active_panel_id() { Some(id) => id, None => return Vec::new() };
+            let timer = match self.timers.get(id) { Some(t) => t, None => return Vec::new() };
+            let mode = match timer.mode { TimerMode::Countdown => "Countdown", TimerMode::Countup => "Countup" };
+            let minutes = (timer.initial / 60).max(1);
+            return vec![
+                EditField { label: "Mode", value: mode.to_string() },
+                EditField { label: "Minutes", value: minutes.to_string() },
+            ];
+        }
         let idx = match self.selected_index() { Some(i) => i, None => return Vec::new() };
         match self.active_panel_type() {
             Some(PanelType::Task) => {
